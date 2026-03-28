@@ -406,42 +406,44 @@ async function connectWallet() {
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
 
-    // Try switching first — handles both MetaMask and Rabby
+    // Step 1: Try switching to Arc Testnet
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x133512" }]
+        params: [{ chainId: "0x4D1C12" }] // 5042002 in hex
       });
     } catch(switchErr) {
-      // Code 4902 = chain not found, try adding it
-      // Code -32603 or message includes "already exists" = already added, just switch
       if (switchErr.code === 4902) {
+        // Chain not found — add it
         try {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
-            params: [{ chainId: "0x133512", chainName: "Arc Testnet",
-              nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-              rpcUrls: [RPC], blockExplorerUrls: ["https://testnet.arcscan.app"] }]
+            params: [{
+              chainId: "0x4D1C12",
+              chainName: "Arc Testnet",
+              nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+              rpcUrls: ["https://rpc.testnet.arc.network"],
+              blockExplorerUrls: ["https://testnet.arcscan.app"]
+            }]
           });
         } catch(addErr) {
-          // If adding fails because it already exists, that's fine — just continue
-          if (!addErr.message?.includes("already") && !addErr.message?.includes("same RPC")) {
+          // Already exists errors are fine — just continue
+          if (!addErr.message?.includes("already") && !addErr.message?.includes("same RPC") && addErr.code !== -32603) {
             throw addErr;
           }
         }
       }
-      // For any other error (including Rabby's 500), just continue —
-      // user may already be on Arc, we check below
+      // Other errors (Rabby 500 etc) — continue and verify chain below
     }
 
     signer = await provider.getSigner();
     wallet = await signer.getAddress();
 
-    // Verify we are actually on Arc Testnet
+    // Step 2: Verify we are on Arc Testnet
     const network = await provider.getNetwork();
     const chainId = Number(network.chainId);
     if (chainId !== 5042002) {
-      toast("Please switch to Arc Testnet in your wallet (Chain ID: 5042002)", "er");
+      toast("Wrong network! Please switch to Arc Testnet (Chain ID: 5042002) in your wallet", "er");
       return;
     }
 
@@ -454,13 +456,18 @@ async function connectWallet() {
     await refreshBalance();
     updateStats();
     toast("Connected to Arc Testnet ✓", "ok");
+
   } catch(e) {
-    // Ignore "same RPC" errors from MetaMask — it means network already exists
-    if (e.message?.includes("same RPC") || e.message?.includes("already exists")) {
-      // Try to continue anyway
+    if (e.message?.includes("same RPC") || e.message?.includes("already exists") || e.code === -32603) {
+      // Network already exists — just get signer and continue
       try {
         signer = await provider.getSigner();
         wallet = await signer.getAddress();
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== 5042002) {
+          toast("Please switch to Arc Testnet manually in your wallet", "er");
+          return;
+        }
         usdc = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
         document.getElementById("wlabel").textContent = wallet.slice(0,6) + "..." + wallet.slice(-4);
         document.getElementById("wdot").classList.add("on");
@@ -469,7 +476,7 @@ async function connectWallet() {
         await refreshBalance();
         updateStats();
         toast("Connected ✓", "ok");
-      } catch {}
+      } catch(e2) { toast("Connect failed: " + e2.message, "er"); }
     } else {
       toast("Connect failed: " + e.message, "er");
     }
