@@ -410,7 +410,7 @@ async function connectWallet() {
     try {
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x4D1C12" }] // 5042002 in hex
+        params: [{ chainId: "0x4D1C12" }] // 5053458 in hex
       });
     } catch(switchErr) {
       if (switchErr.code === 4902) {
@@ -442,8 +442,8 @@ async function connectWallet() {
     // Step 2: Verify we are on Arc Testnet
     const network = await provider.getNetwork();
     const chainId = Number(network.chainId);
-    if (chainId !== 5042002) {
-      toast("Wrong network! Please switch to Arc Testnet (Chain ID: 5042002) in your wallet", "er");
+    if (chainId !== 5053458) {
+      toast("Wrong network! Please switch to Arc Testnet (Chain ID: 5053458) in your wallet", "er");
       return;
     }
 
@@ -464,7 +464,7 @@ async function connectWallet() {
         signer = await provider.getSigner();
         wallet = await signer.getAddress();
         const network = await provider.getNetwork();
-        if (Number(network.chainId) !== 5042002) {
+        if (Number(network.chainId) !== 5053458) {
           toast("Please switch to Arc Testnet manually in your wallet", "er");
           return;
         }
