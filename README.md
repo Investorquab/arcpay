@@ -1,135 +1,57 @@
-# ArcPay 💸
+# Sample Hardhat 3 Beta Project (`node:test` and `viem`)
 
-> USDC Payroll & Bulk Payments on Arc Testnet
+This project showcases a Hardhat 3 Beta project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
 
-ArcPay is a minimal, friendly payment tool built on [Arc](https://arc.network) — a stablecoin-native L1 blockchain by Circle. Send USDC to individuals or run full payroll to your entire team in one click.
+To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
 
-**Live Demo:** https://arcpay.vercel.app
+## Project Overview
 
----
+This example project includes:
 
-## What it does
+- A simple Hardhat configuration file.
+- Foundry-compatible Solidity unit tests.
+- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
+- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
 
-| Feature | Description |
-|---|---|
-| **Send Payment** | Pay anyone a USDC amount instantly on Arc |
-| **Bulk Payroll** | Upload a CSV or manually add recipients — pay everyone in one click |
-| **Payment History** | Every payment saved locally with explorer links |
-| **Live Balance** | See your USDC balance on Arc Testnet in real time |
+## Usage
 
----
+### Running Tests
 
-## Why Arc?
+To run all the tests in the project, execute the following command:
 
-Arc is purpose-built for real-world payments:
-
-- **USDC as gas** — fees are ~0.006 USDC per transaction. No ETH, no volatile gas tokens
-- **Sub-second finality** — payments confirm instantly, no waiting
-- **Circle-native** — direct integration with Circle's USDC, CCTP, and developer tools
-- **EVM compatible** — deploy with standard Solidity + ethers.js tooling
-
-ArcPay uses Arc's native USDC contract (`0x3600000000000000000000000000000000000000`) directly — no custom smart contract needed for basic payments.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [MetaMask](https://metamask.io) or [Rabby](https://rabby.io) wallet
-- Arc Testnet added to your wallet
-- Testnet USDC from [faucet.circle.com](https://faucet.circle.com)
-
-### Add Arc Testnet to MetaMask
-
-| Field | Value |
-|---|---|
-| Network Name | Arc Testnet |
-| RPC URL | https://rpc.testnet.arc.network |
-| Chain ID | 5042002 |
-| Currency Symbol | USDC |
-| Explorer | https://testnet.arcscan.app |
-
-### Run Locally
-
-```bash
-# Clone the repo
-git clone https://github.com/Investorquab/arcpay.git
-cd arcpay
-
-# Serve locally (no build step needed!)
-npx serve .
+```shell
+npx hardhat test
 ```
 
-Open `http://localhost:3000` in your browser.
+You can also selectively run the Solidity or `node:test` tests:
 
----
-
-## Bulk Payroll CSV Format
-
-ArcPay accepts a simple CSV file for bulk payments:
-
-```csv
-name, wallet_address, amount
-John Doe, 0x1234...abcd, 150.00
-Jane Smith, 0x5678...efgh, 200.00
-Alice, 0x9abc...ijkl, 75.50
+```shell
+npx hardhat test solidity
+npx hardhat test nodejs
 ```
 
-- **name** — recipient name (optional)
-- **wallet_address** — Arc Testnet wallet address (required)
-- **amount** — USDC amount to send (required)
+### Make a deployment to Sepolia
 
-Drop the CSV on the upload zone or click to browse. ArcPay will preview all recipients before you confirm.
+This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
 
----
+To run the deployment to a local chain:
 
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Blockchain | Arc Testnet (Chain ID: 5042002) |
-| Token | USDC (`0x3600...0000`) |
-| Wallet | MetaMask / Rabby via ethers.js v6 |
-| Frontend | Vanilla HTML + CSS + JS (no framework) |
-| Font | Bricolage Grotesque + DM Mono |
-| Deployment | Vercel |
-
-No build step. No framework. No node_modules. Just one HTML file.
-
----
-
-## Contract Addresses (Arc Testnet)
-
-```
-USDC:        0x3600000000000000000000000000000000000000
-EURC:        0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a
-Explorer:    https://testnet.arcscan.app
-Faucet:      https://faucet.circle.com
-RPC:         https://rpc.testnet.arc.network
+```shell
+npx hardhat ignition deploy ignition/modules/Counter.ts
 ```
 
----
+To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
 
-## Roadmap
+You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
 
-- [ ] EURC support (Euro stablecoin)
-- [ ] Crosschain bridge via Circle CCTP
-- [ ] Payment links (share a link, get paid)
-- [ ] Scheduled/recurring payments
-- [ ] CSV export of payment history
-- [ ] Email receipts
+To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
 
----
+```shell
+npx hardhat keystore set SEPOLIA_PRIVATE_KEY
+```
 
-## Built By
+After setting the variable, you can run the deployment with the Sepolia network:
 
-Built by [@Investorquab](https://github.com/Investorquab) as a contribution to the Arc ecosystem.
-
-Part of the **Arc Builder** community — [community.arc.network](https://community.arc.network)
-
----
-
-## License
-
-MIT — free to use, fork, and build on.
+```shell
+npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
+```

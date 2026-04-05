@@ -378,13 +378,23 @@ header{background:var(--white);border-bottom:1px solid var(--border);padding:0 3
 <script>
 const RPC = "https://rpc.testnet.arc.network";
 const USDC_ADDR = "0x3600000000000000000000000000000000000000";
+const ARCPAY_ADDR = "0xf19E8826E1feEd56c6EbaaF4c81574AfFaDE5c05";
+const ARCPAY_ABI = [
+  "function batchPay(address[] calldata recipients, uint256[] calldata amounts) external",
+  "function singlePay(address recipient, uint256 amount, string calldata note) external",
+  "function getBatchTotal(uint256[] calldata amounts) external pure returns (uint256)",
+  "function getStats() external view returns (uint256, uint256, uint256)",
+  "function getSenderStats(address sender) external view returns (uint256, uint256)",
+  "event BatchPaid(address indexed sender, uint256 recipientCount, uint256 totalAmount, uint256 timestamp)",
+  "event SinglePaid(address indexed sender, address indexed recipient, uint256 amount, string note, uint256 timestamp)"
+];
 const USDC_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function transfer(address to, uint256 amount) returns (bool)",
   "function decimals() view returns (uint8)"
 ];
 
-let provider, signer, usdc, wallet;
+let provider, signer, usdc, arcpay, wallet;
 let bulkList = []; // {name, addr, amount}
 let history = JSON.parse(localStorage.getItem("arcpay_history") || "[]");
 let totalPaid = parseFloat(localStorage.getItem("arcpay_total") || "0");
@@ -448,6 +458,7 @@ async function connectWallet() {
     }
 
     usdc = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
+    arcpay = new ethers.Contract(ARCPAY_ADDR, ARCPAY_ABI, signer);
     document.getElementById("wlabel").textContent = wallet.slice(0,6) + "..." + wallet.slice(-4);
     document.getElementById("wdot").classList.add("on");
     document.getElementById("wbtn").textContent = "Connected ✓";
@@ -469,6 +480,7 @@ async function connectWallet() {
           return;
         }
         usdc = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
+    arcpay = new ethers.Contract(ARCPAY_ADDR, ARCPAY_ABI, signer);
         document.getElementById("wlabel").textContent = wallet.slice(0,6) + "..." + wallet.slice(-4);
         document.getElementById("wdot").classList.add("on");
         document.getElementById("wbtn").textContent = "Connected ✓";
@@ -661,44 +673,40 @@ async function doBulk() {
 
   const st = document.getElementById("bulk-st");
   const btn = document.getElementById("bulk-btn");
-  const total = bulkList.length;
-  let done = 0, failed = 0;
-  const hashes = [];
+  const batchTotal = bulkList.reduce((s, r) => s + r.amount, 0);
+  const totalAmount = BigInt(Math.round(batchTotal * 1e6));
+  const recipients = bulkList.map(r => r.addr);
+  const amounts = bulkList.map(r => BigInt(Math.round(r.amount * 1e6)));
 
   btn.disabled = true;
-  st.className = "status p";
-  st.innerHTML = `<span class="spin"></span>Processing payroll — 0/${total} sent...`;
+  try {
+    // STEP 1: One approval for the total amount
+    st.className = "status p";
+    st.innerHTML = `<span class="spin"></span>Step 1/2 — Approving ${batchTotal.toFixed(2)} USDC for all ${bulkList.length} recipients...`;
+    const approveTx = await usdc.approve(ARCPAY_ADDR, totalAmount);
+    await approveTx.wait();
 
-  for (const r of bulkList) {
-    try {
-      const amount = BigInt(Math.round(r.amount * 1e6));
-      const tx = await usdc.transfer(r.addr, amount);
-      const rc = await tx.wait();
-      hashes.push({ name: r.name, hash: rc.hash });
-      done++;
-      st.innerHTML = `<span class="spin"></span>Processing payroll — ${done}/${total} sent...`;
-    } catch(e) {
-      failed++;
-    }
-  }
+    // STEP 2: One transaction pays everyone
+    st.innerHTML = `<span class="spin"></span>Step 2/2 — Sending to all ${bulkList.length} recipients in one transaction...`;
+    const tx = await arcpay.batchPay(recipients, amounts);
+    st.innerHTML = `<span class="spin"></span>Confirming... <a class="tx-hash" href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">${tx.hash.slice(0,16)}...</a>`;
+    const rc = await tx.wait();
 
-  const batchTotal = bulkList.reduce((s, r) => s + r.amount, 0);
-  saveHistory({ type: "bulk", count: done, amount: batchTotal, hashes, ts: Date.now(), status: failed > 0 ? "partial" : "ok" });
-  totalPaid += batchTotal; totalTxs += done; totalRecs += done;
-  saveStats();
-  updateStats();
-  await refreshBalance();
-
-  if (failed === 0) {
     st.className = "status ok";
-    st.innerHTML = `✓ Payroll complete! Sent to ${done} recipients. Total: ${batchTotal.toFixed(2)} USDC`;
-    toast("Payroll complete ✓", "ok");
+    st.innerHTML = `✓ Payroll complete! All ${bulkList.length} recipients paid in ONE transaction. <a class="tx-hash" href="https://testnet.arcscan.app/tx/${rc.hash}" target="_blank">View on Explorer →</a>`;
+
+    saveHistory({ type: "bulk", count: bulkList.length, amount: batchTotal, hash: rc.hash, ts: Date.now(), status: "ok" });
+    totalPaid += batchTotal; totalTxs += 1; totalRecs += bulkList.length;
+    saveStats();
+    updateStats();
+    await refreshBalance();
+    toast("Payroll complete ✓ — 1 transaction!", "ok");
     bulkList = [];
     renderBulk();
-  } else {
+  } catch(e) {
     st.className = "status er";
-    st.innerHTML = `⚠ ${done} sent, ${failed} failed. Check explorer for details.`;
-    toast(done + " sent, " + failed + " failed", "er");
+    st.textContent = "✗ " + (e.reason || e.message || "Transaction failed");
+    toast("Payroll failed", "er");
   }
   btn.disabled = false;
 }
