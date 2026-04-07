@@ -1,785 +1,1141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ArcPay — USDC Payroll on Arc</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f7f6f2;
-  --white:#ffffff;
-  --surface:#f0efe9;
-  --border:#e4e2d9;
-  --border2:#d4d2c8;
-  --text:#1c1c18;
-  --muted:#8c8c7a;
-  --muted2:#b8b8a8;
-  --arc:#00b87a;
-  --arc2:#00d48a;
-  --arc-dim:rgba(0,184,122,0.08);
-  --arc-dim2:rgba(0,184,122,0.15);
-  --arc-text:#006644;
-  --orange:#f5622d;
-  --orange-dim:rgba(245,98,45,0.08);
-  --blue:#2563eb;
-  --blue-dim:rgba(37,99,235,0.08);
-  --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04);
-  --shadow2:0 2px 8px rgba(0,0,0,0.08),0 16px 40px rgba(0,0,0,0.06);
-  --font:'Bricolage Grotesque',sans-serif;
-  --mono:'DM Mono',monospace;
-  --r:14px;
-}
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:15px;line-height:1.5}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Truth or Twist 🧠</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    :root {
+      --bg:     #050510;
+      --card:   #0c0c20;
+      --card2:  #111128;
+      --border: #1e1e40;
+      --blue:   #3d8bff;
+      --purple: #7c3aed;
+      --green:  #00e59b;
+      --red:    #ff3d5a;
+      --yellow: #ffd43b;
+      --orange: #ff7a35;
+      --text:   #eeeef8;
+      --muted:  #6060a0;
+      --fh: 'Syne', sans-serif;
+      --fb: 'DM Sans', sans-serif;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-/* HEADER */
-header{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border)}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--arc),var(--arc2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;letter-spacing:-.5px}
-.logo-name{font-size:18px;font-weight:800;letter-spacing:-.5px;color:var(--text)}
-.logo-tag{font-size:11px;color:var(--muted);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:20px;margin-left:4px}
-.header-right{display:flex;align-items:center;gap:10px}
-.w-pill{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);color:var(--muted);transition:all .2s;cursor:pointer}
-.w-pill:hover{border-color:var(--arc);color:var(--arc-text)}
-.w-dot{width:6px;height:6px;border-radius:50%;background:var(--muted2);transition:background .3s;flex-shrink:0}
-.w-dot.on{background:var(--arc);box-shadow:0 0 6px rgba(0,184,122,.4)}
-.btn{padding:8px 18px;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;letter-spacing:-.1px}
-.btn-arc{background:var(--arc);color:white}
-.btn-arc:hover{background:var(--arc2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,184,122,.3)}
-.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text)}
-.btn-ghost:hover{border-color:var(--border2);background:var(--white)}
-.btn-sm{padding:6px 14px;font-size:12px}
+    body {
+      font-family: var(--fb);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-/* LAYOUT */
-.app{max-width:960px;margin:0 auto;padding:32px 24px}
+    /* animated grid */
+    body::before {
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background-image:
+        linear-gradient(rgba(61,139,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(61,139,255,.025) 1px, transparent 1px);
+      background-size:44px 44px;
+      animation: gridDrift 25s linear infinite;
+    }
+    @keyframes gridDrift { to { background-position:44px 44px; } }
 
-/* NAV TABS */
-.tabs{display:flex;gap:4px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:28px;box-shadow:var(--shadow)}
-.tab{flex:1;padding:9px 16px;border-radius:9px;border:none;background:none;font-family:var(--font);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center}
-.tab:hover{color:var(--text);background:var(--surface)}
-.tab.on{background:var(--text);color:white;font-weight:600}
+    /* bg glows */
+    body::after {
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse 700px 500px at 15% 15%, rgba(124,58,237,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 600px 600px at 85% 85%, rgba(61,139,255,.05) 0%, transparent 70%);
+    }
 
-/* PAGES */
-.page{display:none;animation:up .25s ease}
-.page.on{display:block}
-@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    /* layout */
+    .wrap {
+      max-width:560px; margin:0 auto;
+      padding:14px 14px 90px;
+      position:relative; z-index:1;
+    }
+    .screen { display:none; }
+    .screen.active { display:block; animation:fadeUp .3s ease; }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
 
-/* BALANCE HERO */
-.hero{background:linear-gradient(135deg,var(--text) 0%,#2d2d28 100%);border-radius:20px;padding:28px 32px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:var(--shadow2)}
-.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(0,184,122,.15) 0%,transparent 70%)}
-.hero::after{content:'';position:absolute;bottom:-40px;left:40px;width:160px;height:160px;background:radial-gradient(circle,rgba(0,212,138,.08) 0%,transparent 70%)}
-.hero-label{font-size:12px;color:rgba(255,255,255,.5);font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
-.hero-amount{font-size:44px;font-weight:800;color:white;letter-spacing:-2px;line-height:1;margin-bottom:4px}
-.hero-amount span{font-size:22px;font-weight:400;color:rgba(255,255,255,.5);margin-right:4px}
-.hero-sub{font-size:13px;color:rgba(255,255,255,.45);font-family:var(--mono);margin-bottom:24px}
-.hero-stats{display:flex;gap:24px;position:relative;z-index:1}
-.hero-stat{display:flex;flex-direction:column;gap:3px}
-.hsl{font-size:11px;color:rgba(255,255,255,.4);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px}
-.hsv{font-size:18px;font-weight:700;color:white;letter-spacing:-.5px}
-.hsv.green{color:var(--arc2)}
-.hero-addr{position:absolute;top:28px;right:32px;font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.35);background:rgba(255,255,255,.06);padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.08)}
+    /* header */
+    .header {
+      text-align:center; padding:36px 0 24px;
+      position:relative; z-index:1;
+    }
+    .header h1 {
+      font-family:var(--fh); font-size:clamp(1.9rem,7vw,3rem); font-weight:800;
+      letter-spacing:-1px; line-height:1;
+      background:linear-gradient(135deg,#fff 10%,var(--blue) 55%,var(--purple) 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .header p { color:var(--muted); margin-top:8px; font-size:.88rem; }
+    .badge {
+      display:inline-block; margin-top:12px;
+      background:linear-gradient(135deg,var(--blue),var(--purple));
+      padding:4px 16px; border-radius:20px;
+      font-size:.68rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+    }
 
-/* SECTION HEADER */
-.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.sec-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
-.sec-sub{font-size:12px;color:var(--muted);font-family:var(--mono)}
+    /* cards */
+    .card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:20px; margin-bottom:12px;
+    }
+    .card-title {
+      font-family:var(--fh); color:var(--blue);
+      font-weight:700; font-size:.9rem; letter-spacing:.5px; margin-bottom:13px;
+    }
 
-/* CARDS */
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
-.card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:14px;font-weight:600;letter-spacing:-.2px}
-.badge{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:20px;font-weight:500}
-.badge-arc{background:var(--arc-dim2);color:var(--arc-text);border:1px solid rgba(0,184,122,.2)}
-.badge-orange{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(245,98,45,.2)}
-.badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(37,99,235,.2)}
-.badge-gray{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+    /* buttons */
+    .btn {
+      display:block; padding:13px 20px; border-radius:12px; border:none;
+      font-family:var(--fb); font-size:.93rem; font-weight:600; cursor:pointer;
+      transition:transform .14s, box-shadow .14s, opacity .14s, filter .14s;
+      width:100%; position:relative; overflow:hidden;
+    }
+    .btn:disabled { opacity:.35; cursor:not-allowed; transform:none !important; }
+    .btn:hover:not(:disabled) { transform:translateY(-2px); }
+    .btn:active:not(:disabled) { transform:translateY(0); }
 
-/* FORM */
-.form-body{padding:20px}
-.field{margin-bottom:16px}
-.field-label{font-size:12px;font-weight:600;color:var(--text);letter-spacing:-.1px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.field-hint{font-size:11px;color:var(--muted);font-family:var(--mono);font-weight:400;margin-left:auto}
-.input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:all .2s}
-.input:focus{border-color:var(--arc);background:var(--white);box-shadow:0 0 0 3px rgba(0,184,122,.1)}
-.input::placeholder{color:var(--muted2)}
-.input-row{display:grid;grid-template-columns:1fr auto;gap:8px}
-.usdc-badge{padding:10px 14px;border-radius:10px;background:var(--arc-dim2);border:1.5px solid rgba(0,184,122,.2);color:var(--arc-text);font-family:var(--mono);font-size:12px;font-weight:600;display:flex;align-items:center;white-space:nowrap}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.send-btn{width:100%;padding:14px;background:var(--arc);color:white;border:none;border-radius:12px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:-.2px;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px}
-.send-btn:hover{background:var(--arc2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,184,122,.3)}
-.send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
-.status{padding:12px 14px;border-radius:10px;font-size:13px;font-family:var(--mono);margin-top:12px;display:none;line-height:1.5}
-.status.p{background:var(--blue-dim);border:1px solid rgba(37,99,235,.2);color:var(--blue);display:block}
-.status.ok{background:var(--arc-dim2);border:1px solid rgba(0,184,122,.2);color:var(--arc-text);display:block}
-.status.er{background:var(--orange-dim);border:1px solid rgba(245,98,45,.2);color:var(--orange);display:block}
-.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(37,99,235,.3);border-top-color:var(--blue);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
-@keyframes sp{to{transform:rotate(360deg)}}
+    .btn-primary {
+      background:linear-gradient(135deg,var(--blue),var(--purple)); color:#fff;
+      box-shadow:0 4px 18px rgba(61,139,255,.22);
+    }
+    .btn-primary:hover:not(:disabled) { box-shadow:0 6px 26px rgba(61,139,255,.38); }
+    .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+    .btn-outline:hover:not(:disabled) { border-color:var(--blue); }
 
-/* CSV UPLOAD */
-.upload-zone{border:2px dashed var(--border2);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);position:relative}
-.upload-zone:hover,.upload-zone.drag{border-color:var(--arc);background:var(--arc-dim)}
-.upload-icon{font-size:28px;margin-bottom:10px;opacity:.5}
-.upload-title{font-size:14px;font-weight:600;margin-bottom:4px}
-.upload-sub{font-size:12px;color:var(--muted);font-family:var(--mono)}
-.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.csv-format{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-top:14px;font-size:11px;font-family:var(--mono);color:var(--muted);line-height:1.8}
-.csv-format strong{color:var(--text)}
+    /* TRUE / TWIST */
+    .btn-true {
+      background:linear-gradient(135deg,#009e62,#00e59b); color:#001409;
+      font-size:1.05rem; font-weight:800; padding:18px;
+      margin-bottom:10px; border-radius:14px;
+      box-shadow:0 4px 18px rgba(0,229,155,.18);
+      transition:transform .14s, box-shadow .14s, filter .14s;
+    }
+    .btn-twist {
+      background:linear-gradient(135deg,#cc2040,#ff3d5a); color:#fff;
+      font-size:1.05rem; font-weight:800; padding:18px; border-radius:14px;
+      box-shadow:0 4px 18px rgba(255,61,90,.18);
+      transition:transform .14s, box-shadow .14s, filter .14s;
+    }
+    .btn-true:hover   { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,229,155,.35); }
+    .btn-twist:hover  { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,61,90,.35); }
+    .btn-true.selected  { box-shadow:0 0 0 3px #00e59b, 0 8px 28px rgba(0,229,155,.4); transform:scale(1.02); }
+    .btn-twist.selected { box-shadow:0 0 0 3px #ff3d5a, 0 8px 28px rgba(255,61,90,.4); transform:scale(1.02); }
+    .btn-true.dim  { filter:brightness(.3) saturate(.3); transform:none !important; }
+    .btn-twist.dim { filter:brightness(.3) saturate(.3); transform:none !important; }
 
-/* PAYROLL PREVIEW */
-.preview-table{width:100%}
-.pt-head{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;padding:10px 16px;font-size:11px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
-.pt-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s}
-.pt-row:hover{background:var(--surface)}
-.pt-row:last-child{border-bottom:none}
-.pt-name{font-size:13px;font-weight:600}
-.pt-addr{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.pt-chain{font-size:10px;color:var(--blue);font-family:var(--mono);background:var(--blue-dim);padding:2px 7px;border-radius:4px;display:inline-block;margin-top:3px}
-.pt-amount{font-size:14px;font-weight:700;font-family:var(--mono);color:var(--arc-text)}
-.pt-remove{width:24px;height:24px;border-radius:6px;border:none;background:none;cursor:pointer;color:var(--muted2);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
-.pt-remove:hover{background:var(--orange-dim);color:var(--orange)}
+    /* inputs */
+    .input {
+      width:100%; background:var(--card2); border:1px solid var(--border);
+      border-radius:12px; padding:13px 15px; color:var(--text);
+      font-family:var(--fb); font-size:.93rem; margin-bottom:11px;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(61,139,255,.13); }
+    .input::placeholder { color:var(--muted); }
 
-/* SUMMARY CARD */
-.summary{background:linear-gradient(135deg,var(--arc-dim) 0%,rgba(0,212,138,.05) 100%);border:1.5px solid rgba(0,184,122,.2);border-radius:14px;padding:20px;margin-top:16px}
-.sum-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
-.sum-row:not(:last-child){border-bottom:1px solid rgba(0,184,122,.1)}
-.sum-key{color:var(--muted);font-family:var(--mono)}
-.sum-val{font-weight:600;font-family:var(--mono)}
-.sum-total{font-size:16px;font-weight:800;color:var(--arc-text)}
+    /* difficulty pills */
+    .diff-row { display:flex; gap:8px; margin-bottom:14px; }
+    .diff-pill {
+      flex:1; padding:9px 6px; border-radius:10px; border:1px solid var(--border);
+      background:var(--card2); color:var(--muted); font-size:.78rem; font-weight:700;
+      cursor:pointer; text-align:center; transition:all .18s;
+    }
+    .diff-pill:hover { border-color:var(--blue); color:var(--text); }
+    .diff-pill.active { color:#000; }
+    .diff-pill[data-d="easy"].active  { background:var(--green); border-color:var(--green); }
+    .diff-pill[data-d="medium"].active { background:var(--yellow); border-color:var(--yellow); }
+    .diff-pill[data-d="hard"].active  { background:var(--red); border-color:var(--red); }
+    .diff-pill[data-d="mixed"].active { background:linear-gradient(135deg,var(--blue),var(--purple)); border-color:transparent; color:#fff; }
 
-/* TX HISTORY */
-.tx-row{display:grid;grid-template-columns:40px 1fr auto;gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border);transition:background .15s;cursor:default}
-.tx-row:hover{background:var(--surface)}
-.tx-row:last-child{border-bottom:none}
-.tx-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.ico-single{background:var(--arc-dim2);color:var(--arc)}
-.ico-bulk{background:#e8f4ff;color:#2563eb}
-.ico-failed{background:var(--orange-dim);color:var(--orange)}
-.tx-name{font-size:14px;font-weight:600;letter-spacing:-.2px}
-.tx-meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.tx-right{text-align:right}
-.tx-amt{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--orange)}
-.tx-time{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
-.tx-hash{font-size:10px;color:var(--blue);text-decoration:none;font-family:var(--mono)}
-.tx-hash:hover{text-decoration:underline}
-.tx-status-pill{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:20px;display:inline-block;margin-top:3px}
-.pill-ok{background:var(--arc-dim2);color:var(--arc-text)}
-.pill-fail{background:var(--orange-dim);color:var(--orange)}
-.pill-pending{background:var(--blue-dim);color:var(--blue)}
+    /* topic banner */
+    .topic-banner {
+      background:linear-gradient(135deg,rgba(61,139,255,.07),rgba(124,58,237,.07));
+      border:1px solid rgba(124,58,237,.22); border-radius:14px;
+      padding:13px 18px; text-align:center; margin-bottom:12px;
+    }
+    .topic-label { font-size:.62rem; text-transform:uppercase; letter-spacing:2px; color:var(--purple); }
+    .topic-name  { font-family:var(--fh); font-size:1rem; font-weight:700; margin-top:4px; }
 
-/* EMPTY STATE */
-.empty{padding:40px 20px;text-align:center}
-.empty-icon{font-size:36px;margin-bottom:12px;opacity:.25}
-.empty-title{font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text)}
-.empty-sub{font-size:13px;color:var(--muted)}
+    /* player list */
+    .player-item {
+      display:flex; align-items:center; gap:12px;
+      background:var(--card2); border:1px solid var(--border);
+      border-radius:12px; padding:11px 14px; margin-bottom:8px;
+      animation:slideIn .28s ease;
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+    .avatar {
+      width:36px; height:36px; border-radius:50%;
+      background:linear-gradient(135deg,var(--blue),var(--purple));
+      display:flex; align-items:center; justify-content:center;
+      font-family:var(--fh); font-size:.78rem; font-weight:800; flex-shrink:0;
+    }
+    .pname { font-weight:600; font-size:.88rem; }
+    .tag { margin-left:auto; padding:3px 9px; border-radius:6px; font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    .tag-host { background:var(--yellow); color:#000; }
+    .tag-you  { background:var(--green);  color:#000; }
+    .tag-spec { background:var(--purple); color:#fff; }
 
-/* ADD ROW */
-.add-row{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--border);background:var(--surface)}
-.add-row .input{font-size:13px;padding:8px 12px}
+    /* room code */
+    .room-code {
+      font-family:var(--fh); font-size:clamp(1.5rem,6vw,2.2rem); font-weight:800;
+      letter-spacing:6px; color:var(--blue); text-align:center; padding:10px 0;
+    }
 
-/* TOAST */
-.toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:12px;font-size:13px;font-family:var(--mono);z-index:999;transform:translateY(60px);opacity:0;transition:all .3s;max-width:300px;border:1px solid;box-shadow:var(--shadow2)}
-.toast.show{transform:translateY(0);opacity:1}
-.toast.ok{background:var(--white);border-color:rgba(0,184,122,.3);color:var(--arc-text)}
-.toast.er{background:var(--white);border-color:rgba(245,98,45,.3);color:var(--orange)}
+    /* game header bar */
+    .round-bar {
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;
+    }
+    .round-pill {
+      background:var(--card2); border:1px solid var(--blue);
+      padding:5px 16px; border-radius:20px; font-size:.8rem; color:var(--blue); font-weight:600;
+    }
 
-/* DIVIDER */
-.divider{height:1px;background:var(--border);margin:20px 0}
+    /* difficulty indicator */
+    .diff-badge {
+      padding:4px 10px; border-radius:10px; font-size:.7rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:.5px;
+    }
+    .diff-easy   { background:rgba(0,229,155,.15); color:var(--green); border:1px solid rgba(0,229,155,.3); }
+    .diff-medium { background:rgba(255,212,59,.15); color:var(--yellow); border:1px solid rgba(255,212,59,.3); }
+    .diff-hard   { background:rgba(255,61,90,.15);  color:var(--red);    border:1px solid rgba(255,61,90,.3); }
 
-/* NETWORK BANNER */
-.net-banner{background:var(--arc-dim);border:1px solid rgba(0,184,122,.2);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:13px}
-.net-dot{width:7px;height:7px;border-radius:50%;background:var(--arc);animation:pulse 2s infinite;flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,184,122,.4)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,184,122,0)}}
-.net-text{color:var(--arc-text);font-weight:500}
-.net-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:auto}
-</style>
+    /* streak */
+    .streak-badge {
+      display:none; align-items:center; gap:5px;
+      background:linear-gradient(135deg,var(--orange),var(--yellow));
+      padding:5px 12px; border-radius:20px;
+      font-size:.8rem; font-weight:800; color:#000;
+      animation:streakPop .4s cubic-bezier(.36,.07,.19,.97);
+    }
+    .streak-badge.visible { display:flex; }
+    @keyframes streakPop {
+      0%  { transform:scale(0) rotate(-12deg); }
+      70% { transform:scale(1.2) rotate(2deg); }
+      100%{ transform:scale(1) rotate(0); }
+    }
+
+    /* timer */
+    .timer {
+      font-family:var(--fh); font-size:2.4rem; font-weight:800; color:var(--yellow);
+      min-width:48px; text-align:center; transition:color .25s;
+    }
+    .timer.urgent { color:var(--red); animation:timerThump .38s infinite; }
+    @keyframes timerThump {
+      0%,100%{ transform:scale(1); }
+      50%    { transform:scale(1.1); }
+    }
+
+    /* statement */
+    .statement-box {
+      background:var(--card2); border:2px solid rgba(124,58,237,.45);
+      border-radius:18px; padding:22px 18px; margin:12px 0;
+      text-align:center; line-height:1.7;
+      font-size:clamp(.92rem,3.5vw,1.1rem); font-weight:500;
+      box-shadow:0 0 36px rgba(124,58,237,.1);
+    }
+    .stmt-label { font-size:.62rem; text-transform:uppercase; letter-spacing:2px; color:var(--purple); margin-bottom:10px; }
+
+    /* wait panel progress */
+    .prog-row { display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted); margin:12px 0 5px; }
+    .prog-track { background:var(--card2); border-radius:4px; height:5px; overflow:hidden; }
+    .prog-fill  { height:100%; background:linear-gradient(90deg,var(--blue),var(--purple)); border-radius:4px; transition:width .5s; }
+
+    /* scoring orb */
+    .orb {
+      width:76px; height:76px; border-radius:50%; margin:0 auto 18px;
+      background:radial-gradient(circle,var(--blue),var(--purple));
+      animation:orbPulse 1.8s ease-in-out infinite;
+      box-shadow:0 0 48px rgba(61,139,255,.5);
+    }
+    @keyframes orbPulse {
+      0%,100%{ transform:scale(1); box-shadow:0 0 48px rgba(61,139,255,.4); }
+      50%    { transform:scale(1.1); box-shadow:0 0 76px rgba(61,139,255,.7); }
+    }
+
+    /* result cards */
+    .result-card {
+      background:var(--card2); border-radius:13px; padding:13px 15px;
+      margin-bottom:9px; border:1px solid var(--border);
+      animation:fadeUp .3s ease;
+    }
+    .result-card.correct   { border-color:var(--green); background:rgba(0,229,155,.04); }
+    .result-card.incorrect { border-color:var(--red);   background:rgba(255,61,90,.04); }
+    .result-row { display:flex; justify-content:space-between; align-items:center; }
+    .xp-pill { background:var(--yellow); color:#000; padding:3px 9px; border-radius:18px; font-size:.75rem; font-weight:800; }
+    .speed-tag { background:rgba(255,122,53,.18); color:var(--orange); padding:2px 7px; border-radius:10px; font-size:.68rem; font-weight:700; margin-left:6px; }
+
+    /* leaderboard */
+    .lb-item {
+      display:flex; align-items:center; gap:12px;
+      background:var(--card2); border:1px solid var(--border);
+      border-radius:12px; padding:12px 14px; margin-bottom:8px;
+    }
+    .lb-item:nth-child(1){ border-color:var(--yellow); }
+    .lb-item:nth-child(2){ border-color:#9ca3af; }
+    .lb-item:nth-child(3){ border-color:#b45309; }
+    .rank { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.78rem; flex-shrink:0; }
+    .rank-1{ background:var(--yellow); color:#000; }
+    .rank-2{ background:#9ca3af; color:#000; }
+    .rank-3{ background:#b45309; color:#fff; }
+    .rank-n{ background:var(--card); border:1px solid var(--border); color:var(--muted); }
+    .lb-xp { margin-left:auto; font-weight:800; color:var(--yellow); font-family:var(--fh); }
+
+    /* correct reveal */
+    .correct-reveal {
+      text-align:center; margin-bottom:16px; padding:18px 16px;
+      background:var(--card2); border-radius:16px; border:1px solid var(--border);
+    }
+    .correct-reveal.cr-correct { border-color:var(--green); background:rgba(0,229,155,.05); }
+    .correct-reveal.cr-wrong   { border-color:var(--red);   background:rgba(255,61,90,.05); }
+    .cr-answer { font-family:var(--fh); font-size:1.8rem; font-weight:800; margin:8px 0; }
+
+    /* spectator banner */
+    .spectator-banner {
+      background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(61,139,255,.1));
+      border:1px solid rgba(124,58,237,.4); border-radius:12px;
+      padding:12px 16px; text-align:center; margin-bottom:12px;
+      font-size:.88rem; color:var(--purple); font-weight:600;
+    }
+
+    /* game over */
+    .crown { font-size:3.6rem; display:block; text-align:center; margin-bottom:10px; animation:crownBounce 1s ease-in-out infinite alternate; }
+    @keyframes crownBounce {
+      from { transform:translateY(0) rotate(-4deg); }
+      to   { transform:translateY(-8px) rotate(4deg); }
+    }
+
+    /* toasts */
+    #toasts {
+      position:fixed; top:14px; right:14px; z-index:9999;
+      display:flex; flex-direction:column; gap:7px; max-width:270px;
+    }
+    .toast {
+      background:var(--card); border:1px solid var(--blue); border-radius:11px;
+      padding:10px 15px; font-size:.82rem;
+      animation:toastIn .3s cubic-bezier(.36,.07,.19,.97);
+      box-shadow:0 4px 18px rgba(0,0,0,.4);
+    }
+    .toast.err { border-color:var(--red); }
+    .toast.ok  { border-color:var(--green); }
+    @keyframes toastIn { from{transform:translateX(110%);opacity:0} to{transform:none;opacity:1} }
+
+    /* status bar */
+    #statusBar {
+      display:none; position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+      background:var(--card2); border:1px solid var(--purple); border-radius:30px;
+      padding:9px 22px; font-size:.84rem; color:var(--purple); z-index:9998;
+      box-shadow:0 0 22px rgba(124,58,237,.28); white-space:nowrap;
+    }
+
+    /* confetti canvas */
+    #cCanvas { position:fixed; inset:0; pointer-events:none; z-index:9000; }
+
+    /* misc */
+    .center { text-align:center; }
+    .muted  { color:var(--muted); font-size:.83rem; }
+    .mt12 { margin-top:12px; }
+    .mt18 { margin-top:18px; }
+    .row  { display:flex; gap:9px; }
+    .row .btn { flex:1; }
+
+    /* mobile */
+    @media (max-width:480px) {
+      .wrap { padding:10px 10px 80px; }
+      .header { padding:24px 0 18px; }
+      .card { padding:16px 14px; border-radius:14px; }
+      .btn-true,.btn-twist { padding:15px; font-size:.97rem; }
+      .timer { font-size:2rem; }
+      .statement-box { padding:16px 13px; font-size:.9rem; }
+      .room-code { letter-spacing:3px; }
+      #toasts { right:8px; left:8px; max-width:100%; }
+      .diff-row { gap:5px; }
+      .diff-pill { font-size:.72rem; padding:8px 4px; }
+    }
+    @media (max-width:360px) {
+      .header h1 { font-size:1.65rem; }
+      .round-pill { font-size:.72rem; padding:4px 10px; }
+    }
+  </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="logo">
-    <div class="logo-mark">AP</div>
-    <div class="logo-name">ArcPay</div>
-    <span class="logo-tag">Arc Testnet</span>
-  </div>
-  <div class="header-right">
-    <div class="w-pill" onclick="connectWallet()">
-      <div class="w-dot" id="wdot"></div>
-      <span id="wlabel">Connect Wallet</span>
+<canvas id="cCanvas"></canvas>
+<div id="toasts"></div>
+<div id="statusBar"></div>
+
+<div class="header">
+  <h1>🧠 Truth or Twist</h1>
+  <p>AI-powered multiplayer trivia on the blockchain</p>
+  <span class="badge">⚡ Powered by GenLayer</span>
+</div>
+
+<div class="wrap">
+
+  <!-- HOME -->
+  <div class="screen active" id="s-home">
+    <div class="topic-banner">
+      <div class="topic-label">🗓️ This Week's Theme</div>
+      <div class="topic-name" id="weeklyTopic">Loading...</div>
     </div>
-    <button class="btn btn-arc btn-sm" id="wbtn" onclick="connectWallet()">Connect</button>
-  </div>
-</header>
-
-<div class="app">
-
-  <!-- NETWORK BANNER -->
-  <div class="net-banner">
-    <div class="net-dot"></div>
-    <span class="net-text">Arc Testnet · USDC as gas · ~0.006 USDC per transaction</span>
-    <span class="net-sub" id="blknum">Block #—</span>
-  </div>
-
-  <!-- BALANCE HERO -->
-  <div class="hero">
-    <div class="hero-addr" id="hero-addr">Not connected</div>
-    <div class="hero-label">Wallet Balance</div>
-    <div class="hero-amount"><span>USDC</span><span id="hero-bal">0.00</span></div>
-    <div class="hero-sub" id="hero-sub">Connect wallet to see your balance</div>
-    <div class="hero-stats">
-      <div class="hero-stat"><span class="hsl">Paid Out</span><span class="hsv green" id="stat-paid">$0.00</span></div>
-      <div class="hero-stat"><span class="hsl">Transactions</span><span class="hsv" id="stat-txs">0</span></div>
-      <div class="hero-stat"><span class="hsl">Recipients</span><span class="hsv" id="stat-recs">0</span></div>
-    </div>
-  </div>
-
-  <!-- TABS -->
-  <div class="tabs">
-    <button class="tab on" onclick="goTab('single',this)">Send Payment</button>
-    <button class="tab" onclick="goTab('bulk',this)">Bulk Payroll</button>
-    <button class="tab" onclick="goTab('history',this)">History</button>
-  </div>
-
-  <!-- SINGLE PAYMENT -->
-  <div class="page on" id="tab-single">
     <div class="card">
-      <div class="card-head">
-        <div class="card-title">Send USDC Payment</div>
-        <span class="badge badge-arc">Arc Native</span>
+      <div class="card-title">🎮 How to Play</div>
+      <p class="muted" style="line-height:1.85">
+        See a statement — is it <strong style="color:var(--green)">TRUE ✅</strong> or a
+        <strong style="color:var(--red)">TWIST ❌</strong>?<br>
+        ⚡ Answer faster for <strong style="color:var(--yellow)">speed bonus XP!</strong><br>
+        🔥 Build streaks for extra bragging rights.<br>
+        5 rounds · 50 questions in the pool · Up to 8 players
+      </p>
+    </div>
+    <div class="card">
+      <div class="card-title">👤 Your Details</div>
+      <input class="input" id="nicknameInput" placeholder="Nickname (e.g. CryptoKing)" maxlength="20" />
+      <input class="input" id="walletInput"   placeholder="Wallet address (0x...)" />
+      <div class="row mt12">
+        <button class="btn btn-primary" onclick="goCreate()">➕ Create Room</button>
+        <button class="btn btn-outline" onclick="goJoin()">🚪 Join Room</button>
       </div>
-      <div class="form-body">
-        <div class="field">
-          <label class="field-label">Recipient Name <span class="field-hint">optional</span></label>
-          <input class="input" id="s-name" placeholder="e.g. John Doe" type="text">
-        </div>
-        <div class="field">
-          <label class="field-label">Wallet Address</label>
-          <input class="input" id="s-addr" placeholder="0x..." type="text">
-        </div>
-        <div class="field">
-          <label class="field-label">Amount</label>
-          <div class="input-row">
-            <input class="input" id="s-amt" type="number" placeholder="0.00" min="0" step="0.01" oninput="calcSingle()">
-            <div class="usdc-badge">USDC</div>
-          </div>
-        </div>
-        <div class="field">
-          <label class="field-label">Note <span class="field-hint">optional</span></label>
-          <input class="input" id="s-note" placeholder="e.g. March salary, Invoice #42...">
-        </div>
-
-        <!-- Fee summary -->
-        <div class="summary" id="single-summary" style="display:none">
-          <div class="sum-row"><span class="sum-key">Recipient</span><span class="sum-val" id="sum-name">—</span></div>
-          <div class="sum-row"><span class="sum-key">Amount</span><span class="sum-val" id="sum-amt">—</span></div>
-          <div class="sum-row"><span class="sum-key">Network fee</span><span class="sum-val">~0.006 USDC</span></div>
-          <div class="sum-row"><span class="sum-key">Total</span><span class="sum-val sum-total" id="sum-total">—</span></div>
-        </div>
-
-        <button class="send-btn" id="single-btn" onclick="doSingle()">
-          <span>Send Payment</span><span>→</span>
-        </button>
-        <div class="status" id="single-st"></div>
+      <div class="center mt12">
+        <button class="btn btn-outline" style="width:auto;padding:9px 24px" onclick="showLeaderboard()">🏆 Leaderboard</button>
       </div>
     </div>
   </div>
 
-  <!-- BULK PAYROLL -->
-  <div class="page" id="tab-bulk">
-
-    <!-- Upload or manual add -->
+  <!-- CREATE -->
+  <div class="screen" id="s-create">
     <div class="card">
-      <div class="card-head">
-        <div class="card-title">Add Recipients</div>
-        <div style="display:flex;gap:8px">
-          <span class="badge badge-blue">CSV Upload</span>
-          <span class="badge badge-gray">or Manual</span>
-        </div>
+      <div class="card-title">➕ Create a Room</div>
+      <p class="muted" style="margin-bottom:16px;line-height:1.7">
+        Choose a difficulty then create your room on-chain. Share the code with friends!
+      </p>
+      <div class="card-title" style="margin-bottom:10px">Difficulty</div>
+      <div class="diff-row">
+        <div class="diff-pill active" data-d="mixed"  onclick="setDiff('mixed')">🎲 Mixed</div>
+        <div class="diff-pill"        data-d="easy"   onclick="setDiff('easy')">🟢 Easy</div>
+        <div class="diff-pill"        data-d="medium" onclick="setDiff('medium')">🟡 Medium</div>
+        <div class="diff-pill"        data-d="hard"   onclick="setDiff('hard')">🔴 Hard</div>
       </div>
-      <div class="form-body">
-        <!-- CSV Upload -->
-        <div class="upload-zone" id="dropzone" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)">
-          <input type="file" accept=".csv" onchange="handleFile(this.files[0])">
-          <div class="upload-icon">📋</div>
-          <div class="upload-title">Drop your CSV here or click to browse</div>
-          <div class="upload-sub">Supports .csv files</div>
-        </div>
-        <div class="csv-format">
-          <strong>CSV Format:</strong> name, wallet_address, amount<br>
-          <strong>Example:</strong> John Doe, 0x1234...abcd, 150.00
-        </div>
-      </div>
+      <button class="btn btn-primary" onclick="createRoom()">🎲 Create Room</button>
+      <div class="center mt12"><button class="btn btn-outline" style="width:auto;padding:9px 22px" onclick="show('s-home')">← Back</button></div>
+    </div>
+  </div>
 
-      <!-- Manual add row -->
-      <div class="add-row">
-        <input class="input" id="b-name" placeholder="Name" style="flex:1">
-        <input class="input" id="b-addr" placeholder="0x wallet address" style="flex:2">
-        <input class="input" id="b-amt" placeholder="USDC" type="number" style="width:100px">
-        <button class="btn btn-arc btn-sm" onclick="addManual()">Add</button>
+  <!-- JOIN -->
+  <div class="screen" id="s-join">
+    <div class="card">
+      <div class="card-title">🚪 Join a Room</div>
+      <input class="input" id="roomCodeInput" placeholder="Room code — e.g. ROOM-0001"
+             style="text-transform:uppercase;letter-spacing:2px;font-family:var(--fh);font-weight:700" />
+      <button class="btn btn-primary" onclick="joinRoom()">🚀 Join</button>
+      <div class="center mt12"><button class="btn btn-outline" style="width:auto;padding:9px 22px" onclick="show('s-home')">← Back</button></div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="s-lobby">
+    <div class="card">
+      <div class="card-title">⏳ Waiting Lobby</div>
+      <div class="muted center" style="font-size:.64rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Room Code</div>
+      <div class="room-code" id="lobbyRoomId">ROOM-????</div>
+      <div class="muted center" style="margin-top:4px;margin-bottom:18px;font-size:.8rem">📋 Share this code with friends!</div>
+      <div class="card-title">Players (<span id="playerCount">1</span>/8)</div>
+      <div id="playerList"></div>
+      <div id="hostBtn" style="display:none;margin-top:14px">
+        <button class="btn btn-primary" id="startBtn" onclick="startGame()" disabled>🚀 Need 1 more player</button>
       </div>
+      <div id="waitMsg" class="center muted mt12">Waiting for host to start...</div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="s-game">
+    <div id="spectatorBanner" class="spectator-banner" style="display:none">
+      👁️ You're spectating — watch the action!
+    </div>
+    <div class="round-bar">
+      <div class="round-pill">Round <span id="roundNum">1</span>/<span id="roundTotal">5</span></div>
+      <div class="streak-badge" id="streakBadge">🔥 <span id="streakCount">2</span>×</div>
+      <div class="timer" id="timerEl">15</div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <span class="diff-badge diff-medium" id="diffBadge">Medium</span>
     </div>
 
-    <!-- Recipients table -->
-    <div class="card" id="bulk-table-card" style="display:none">
-      <div class="card-head">
-        <div class="card-title">Payroll List</div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="badge badge-arc" id="bulk-count">0 recipients</span>
-          <button class="btn btn-ghost btn-sm" onclick="clearBulk()">Clear all</button>
-        </div>
-      </div>
-      <div>
-        <div class="pt-head">
-          <span>Recipient</span>
-          <span>Wallet</span>
-          <span>Amount</span>
-        </div>
-        <div id="bulk-list"></div>
-      </div>
+    <div class="statement-box">
+      <div class="stmt-label">📋 True or Twist?</div>
+      <div id="statementText">Loading...</div>
+    </div>
 
-      <!-- Summary -->
-      <div style="padding:16px 20px;border-top:1px solid var(--border)">
-        <div class="summary">
-          <div class="sum-row"><span class="sum-key">Recipients</span><span class="sum-val" id="bsum-recs">0</span></div>
-          <div class="sum-row"><span class="sum-key">Total amount</span><span class="sum-val" id="bsum-amt">0.00 USDC</span></div>
-          <div class="sum-row"><span class="sum-key">Est. gas</span><span class="sum-val" id="bsum-gas">~0.00 USDC</span></div>
-          <div class="sum-row"><span class="sum-key">Total cost</span><span class="sum-val sum-total" id="bsum-total">0.00 USDC</span></div>
-        </div>
-        <button class="send-btn" id="bulk-btn" onclick="doBulk()" style="margin-top:14px">
-          <span>Run Payroll</span><span id="bulk-count-btn">→</span>
-        </button>
-        <div class="status" id="bulk-st"></div>
+    <div class="card" id="answerPanel">
+      <div class="card-title">✍️ Your Answer</div>
+      <button class="btn btn-true"  id="btnTrue"  onclick="pick('TRUE')">✅ TRUE — This is accurate</button>
+      <button class="btn btn-twist" id="btnTwist" onclick="pick('TWIST')">❌ TWIST — This is misleading</button>
+      <div id="pickedLabel" style="display:none;text-align:center;font-weight:700;font-size:.95rem;margin:10px 0 0"></div>
+      <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled style="margin-top:13px">📤 Submit Answer</button>
+    </div>
+
+    <div class="card" id="waitPanel" style="display:none">
+      <div class="center">
+        <div style="font-size:2.2rem;margin-bottom:10px">⏳</div>
+        <div style="font-family:var(--fh);font-weight:700;font-size:1rem;margin-bottom:5px">Answer locked in!</div>
+        <div class="muted">Waiting for other players...</div>
+        <div class="prog-row mt12"><span>Submitted</span><span><span id="subCount">0</span>/<span id="subTotal">0</span></span></div>
+        <div class="prog-track"><div class="prog-fill" id="subBar" style="width:0%"></div></div>
       </div>
     </div>
   </div>
 
-  <!-- HISTORY -->
-  <div class="page" id="tab-history">
+  <!-- SCORING -->
+  <div class="screen" id="s-scoring">
+    <div class="card center" style="padding:42px 22px">
+      <div class="orb"></div>
+      <h2 style="font-family:var(--fh);margin-bottom:10px">Calculating...</h2>
+      <p class="muted" id="scoringMsg">Scoring your answers...</p>
+      <p style="margin-top:16px;font-size:.72rem;color:var(--purple)">⚖️ GenLayer Optimistic Democracy</p>
+    </div>
+  </div>
+
+  <!-- ROUND RESULTS -->
+  <div class="screen" id="s-results">
     <div class="card">
-      <div class="card-head">
-        <div class="card-title">Payment History</div>
-        <span class="badge badge-gray" id="hist-count">0 payments</span>
+      <div class="card-title">📊 Round Results</div>
+      <div id="correctReveal"></div>
+      <div id="resultsList"></div>
+      <div class="card-title mt12">🏅 Current Scores</div>
+      <div id="scoresList"></div>
+      <div class="center muted mt12" style="font-size:.8rem">Next round in <span id="nextTimer">6</span>s...</div>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="screen" id="s-gameover">
+    <div class="card center">
+      <span class="crown">🏆</span>
+      <h2 style="font-family:var(--fh);font-size:1.9rem;margin-bottom:6px">Game Over!</h2>
+      <p class="muted" style="margin-bottom:20px">Final Results</p>
+      <div id="finalRanking" style="text-align:left"></div>
+      <div class="row mt18">
+        <button class="btn btn-primary" onclick="playAgain()">🔄 Play Again</button>
+        <button class="btn btn-outline" onclick="showLeaderboard()">🏆 Leaderboard</button>
       </div>
-      <div id="hist-list">
-        <div class="empty">
-          <div class="empty-icon">📭</div>
-          <div class="empty-title">No payments yet</div>
-          <div class="empty-sub">Your payment history will appear here</div>
-        </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="screen" id="s-leaderboard">
+    <div class="card">
+      <div class="card-title">🏆 All-Time Leaderboard</div>
+      <div id="lbList"><div class="center muted">Loading...</div></div>
+      <div class="center mt12">
+        <button class="btn btn-outline" style="width:auto;padding:9px 22px" onclick="show('s-home')">← Back</button>
       </div>
     </div>
   </div>
 
 </div>
-<div class="toast" id="toast"></div>
 
 <script>
-const RPC = "https://rpc.testnet.arc.network";
-const USDC_ADDR = "0x3600000000000000000000000000000000000000";
-const ARCPAY_ADDR = "0xf19E8826E1feEd56c6EbaaF4c81574AfFaDE5c05";
-const ARCPAY_ABI = [
-  "function batchPay(address[] calldata recipients, uint256[] calldata amounts) external",
-  "function singlePay(address recipient, uint256 amount, string calldata note) external",
-  "function getBatchTotal(uint256[] calldata amounts) external pure returns (uint256)",
-  "function getStats() external view returns (uint256, uint256, uint256)",
-  "function getSenderStats(address sender) external view returns (uint256, uint256)",
-  "event BatchPaid(address indexed sender, uint256 recipientCount, uint256 totalAmount, uint256 timestamp)",
-  "event SinglePaid(address indexed sender, address indexed recipient, uint256 amount, string note, uint256 timestamp)"
-];
-const USDC_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function transfer(address to, uint256 amount) returns (bool)",
-  "function decimals() view returns (uint8)"
-];
+// ═══════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════
+// Auto-detect backend: use env URL in production, localhost in development
+const BACKEND = window.BACKEND_URL || 'https://truth-or-twist-production.up.railway.app';
 
-let provider, signer, usdc, arcpay, wallet;
-let bulkList = []; // {name, addr, amount}
-let history = JSON.parse(localStorage.getItem("arcpay_history") || "[]");
-let totalPaid = parseFloat(localStorage.getItem("arcpay_total") || "0");
-let totalTxs = parseInt(localStorage.getItem("arcpay_txs") || "0");
-let totalRecs = parseInt(localStorage.getItem("arcpay_recs") || "0");
+let socket        = null;
+let myAddress     = '';
+let myRoomId      = '';
+let amHost        = false;
+let isSpectator   = false;
+let pickedAnswer  = null;
+let myNickname    = '';
+let currentStreak = 0;
+let roundStartMs  = 0;
+let selectedDiff  = 'mixed';
+const playerNicknames = {};
 
-// ── TABS ──────────────────────────────────────────────────────
-function goTab(id, btn) {
-  document.querySelectorAll(".page, .tab").forEach(el => el.classList.remove("on"));
-  document.getElementById("tab-" + id).classList.add("on");
-  btn.classList.add("on");
-  if (id === "history") renderHistory();
+function displayName(addr) {
+  const nick = playerNicknames[addr];
+  if (addr === myAddress) return '⭐ ' + (myNickname || nick || 'You');
+  return nick || (addr.slice(0,6) + '...' + addr.slice(-4));
 }
 
-// ── WALLET ────────────────────────────────────────────────────
-async function connectWallet() {
-  if (!window.ethereum) { toast("MetaMask not found — install it first", "er"); return; }
+let timerHandle = null;
+let timeLeft    = 15;
+
+// ═══════════════════════════════════════════════════════
+// SOUND ENGINE (Web Audio API — zero dependencies)
+// ═══════════════════════════════════════════════════════
+let _ac = null;
+function ac() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  // Resume if suspended (browsers require user gesture)
+  if (_ac.state === 'suspended') _ac.resume();
+  return _ac;
+}
+
+function tone(freq, type='sine', dur=0.12, vol=0.22, delay=0) {
   try {
-    provider = new ethers.BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
+    const ctx = ac();
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    g.gain.setValueAtTime(vol, ctx.currentTime + delay);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + dur + 0.01);
+  } catch(e) {}
+}
 
-    // Step 1: Try switching to Arc Testnet
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x4CEF52" }] // 5042002 in hex
-      });
-    } catch(switchErr) {
-      if (switchErr.code === 4902) {
-        // Chain not found — add it
-        try {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [{
-              chainId: "0x4CEF52",
-              chainName: "Arc Testnet",
-              nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
-              rpcUrls: ["https://rpc.testnet.arc.network"],
-              blockExplorerUrls: ["https://testnet.arcscan.app"]
-            }]
-          });
-        } catch(addErr) {
-          // Already exists errors are fine — just continue
-          if (!addErr.message?.includes("already") && !addErr.message?.includes("same RPC") && addErr.code !== -32603) {
-            throw addErr;
-          }
-        }
-      }
-      // Other errors (Rabby 500 etc) — continue and verify chain below
+const SFX = {
+  pick()        { tone(480,'sine',.08,.18); },
+  submit()      { tone(520,'sine',.1,.2); tone(660,'sine',.12,.16,.09); },
+  correct()     { [523,659,784,1047].forEach((f,i)=>tone(f,'sine',.2,.22,i*.09)); },
+  wrong()       { tone(200,'sawtooth',.14,.18); tone(160,'sawtooth',.18,.14,.13); },
+  streak()      { [660,880,1100].forEach((f,i)=>tone(f,'sine',.13,.26,i*.07)); },
+  countdown()   { tone(900,'square',.055,.13); },
+  gameOver()    { [440,494,523,659,784,1047].forEach((f,i)=>tone(f,'sine',.24,.24,i*.13)); },
+  roundStart()  { tone(660,'sine',.14,.2); tone(880,'sine',.14,.16,.12); },
+  join()        { tone(440,'sine',.1,.16); tone(550,'sine',.12,.14,.08); },
+};
+
+// ═══════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════
+const cCanvas = document.getElementById('cCanvas');
+const cCtx    = cCanvas.getContext('2d');
+let cParts = [];
+let cRaf   = null;
+
+function confetti(count = 80) {
+  cCanvas.width  = window.innerWidth;
+  cCanvas.height = window.innerHeight;
+  const cols = ['#ffd43b','#3d8bff','#7c3aed','#00e59b','#ff3d5a','#ff7a35','#ffffff'];
+  for (let i = 0; i < count; i++) {
+    cParts.push({
+      x: Math.random() * cCanvas.width,
+      y: -20,
+      w: Math.random()*10+5, h: Math.random()*5+2,
+      c: cols[Math.floor(Math.random()*cols.length)],
+      vx: (Math.random()-.5)*5,
+      vy: Math.random()*4+3,
+      rot: Math.random()*360, rotV: (Math.random()-.5)*8,
+    });
+  }
+  if (cRaf) return;
+  (function draw() {
+    cCtx.clearRect(0,0,cCanvas.width,cCanvas.height);
+    cParts = cParts.filter(p => p.y < cCanvas.height + 20);
+    cParts.forEach(p => {
+      p.x += p.vx; p.y += p.vy + .12; p.rot += p.rotV; p.vy += .1;
+      cCtx.save();
+      cCtx.translate(p.x, p.y);
+      cCtx.rotate(p.rot * Math.PI/180);
+      cCtx.fillStyle = p.c;
+      cCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      cCtx.restore();
+    });
+    if (cParts.length) cRaf = requestAnimationFrame(draw);
+    else { cRaf = null; cCtx.clearRect(0,0,cCanvas.width,cCanvas.height); }
+  })();
+}
+
+window.addEventListener('resize', () => { cCanvas.width=innerWidth; cCanvas.height=innerHeight; });
+
+// ═══════════════════════════════════════════════════════
+// STREAK
+// ═══════════════════════════════════════════════════════
+function refreshStreak() {
+  const badge = document.getElementById('streakBadge');
+  const count = document.getElementById('streakCount');
+  if (currentStreak >= 2) {
+    count.textContent = currentStreak;
+    // re-trigger animation
+    badge.classList.remove('visible');
+    void badge.offsetWidth;
+    badge.classList.add('visible');
+    if (currentStreak >= 3) SFX.streak();
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DIFFICULTY SELECTOR
+// ═══════════════════════════════════════════════════════
+function setDiff(d) {
+  selectedDiff = d;
+  document.querySelectorAll('.diff-pill').forEach(el => {
+    el.classList.toggle('active', el.dataset.d === d);
+  });
+}
+
+function diffClass(d) {
+  if (d === 'easy')   return 'diff-easy';
+  if (d === 'hard')   return 'diff-hard';
+  return 'diff-medium';
+}
+function diffLabel(d) {
+  if (d === 'easy')   return '🟢 Easy';
+  if (d === 'hard')   return '🔴 Hard';
+  if (d === 'mixed')  return '🎲 Mixed';
+  return '🟡 Medium';
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.onload = () => { connectSocket(); loadWeeklyTopic(); };
+
+// ═══════════════════════════════════════════════════════
+// SOCKET
+// ═══════════════════════════════════════════════════════
+function connectSocket() {
+  socket = io(BACKEND);
+
+  socket.on('connect',    () => console.log('🔌', socket.id));
+  socket.on('disconnect', () => toast('Disconnected', 'err'));
+  socket.on('status_update', d => showStatus(d.message));
+
+  socket.on('room_created', d => {
+    hideStatus();
+    myRoomId = d.roomId; amHost = true; isSpectator = false;
+    if (d.roomState?.nicknames) Object.assign(playerNicknames, d.roomState.nicknames);
+    openLobby(d.roomId, null, true, d.roomState?.players || [myAddress]);
+    toast('Room ' + d.roomId + ' created! 🎉', 'ok');
+    SFX.join();
+  });
+
+  socket.on('room_joined', d => {
+    if (d.nicknames) Object.assign(playerNicknames, d.nicknames);
+    hideStatus(); myRoomId = d.roomId; amHost = false; isSpectator = false;
+    toast('Joined ' + d.roomId + '! 🚪', 'ok');
+    SFX.join();
+  });
+
+  socket.on('room_update', d => {
+    if (d.roomState?.nicknames) Object.assign(playerNicknames, d.roomState.nicknames);
+    if (d.roomState) updateLobby(d.roomState);
+    if (d.message)  toast(d.message);
+  });
+
+  socket.on('player_left', d => toast(d.message, 'err'));
+
+  // SPECTATOR — game is in progress when they join
+  socket.on('joined_as_spectator', d => {
+    hideStatus();
+    isSpectator = true;
+    myRoomId = d.roomId;
+    toast('👁️ Spectating ' + d.roomId, 'ok');
+    if (d.roomState?.nicknames) Object.assign(playerNicknames, d.roomState.nicknames);
+    // Show the game screen in spectator mode (read-only)
+    document.getElementById('spectatorBanner').style.display = 'block';
+    document.getElementById('answerPanel').style.display = 'none';
+    document.getElementById('waitPanel').style.display   = 'none';
+    // Update scores if available
+    if (d.roomState?.current_round) {
+      document.getElementById('roundNum').textContent   = d.roomState.current_round;
+      document.getElementById('roundTotal').textContent = 5;
     }
+    show('s-game');
+  });
 
-    signer = await provider.getSigner();
-    wallet = await signer.getAddress();
+  socket.on('game_started', d => {
+    toast('🚀 Game starting!', 'ok');
+    SFX.roundStart();
+  });
 
-    // Step 2: Verify we are on Arc Testnet
-    const network = await provider.getNetwork();
-    const chainId = Number(network.chainId);
-    if (chainId !== 5042002) {
-      toast("Wrong network! Please switch to Arc Testnet (Chain ID: 5042002) in your wallet", "er");
+  socket.on('round_start', d => startRound(d));
+
+  socket.on('answer_received', () => {
+    document.getElementById('answerPanel').style.display = 'none';
+    document.getElementById('waitPanel').style.display   = 'block';
+    SFX.submit();
+  });
+
+  socket.on('submission_update', d => {
+    document.getElementById('subCount').textContent = d.submitted_count;
+    document.getElementById('subTotal').textContent = d.total_players;
+    const pct = d.total_players ? (d.submitted_count / d.total_players * 100) : 0;
+    document.getElementById('subBar').style.width = pct + '%';
+  });
+
+  socket.on('scoring_in_progress', () => { show('s-scoring'); cycleScoringMsg(); });
+
+  socket.on('round_results', d => {
+    if (d.roomState?.nicknames) Object.assign(playerNicknames, d.roomState.nicknames);
+    showRoundResults(d);
+  });
+
+  socket.on('game_over', d => {
+    if (d.nicknames) Object.assign(playerNicknames, d.nicknames);
+    showGameOver(d);
+  });
+
+  socket.on('error', d => { hideStatus(); toast(d.message, 'err'); });
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN HELPERS
+// ═══════════════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function showStatus(m) { const b=document.getElementById('statusBar'); b.textContent=m; b.style.display='block'; }
+function hideStatus()  { document.getElementById('statusBar').style.display='none'; }
+
+// ═══════════════════════════════════════════════════════
+// WEEKLY TOPIC
+// ═══════════════════════════════════════════════════════
+async function loadWeeklyTopic() {
+  try {
+    const r = await fetch(BACKEND+'/api/weekly-topic');
+    const j = await r.json();
+    const t = j?.data?.topic || '';
+    document.getElementById('weeklyTopic').textContent =
+      t.toLowerCase().startsWith('load') ? '🎲 Mixed Trivia — 50 Questions!' : '📚 '+cap(t);
+  } catch(e) {
+    document.getElementById('weeklyTopic').textContent = 'Start backend to connect';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// HOME → CREATE / JOIN
+// ═══════════════════════════════════════════════════════
+function getAddress() {
+  const nick = document.getElementById('nicknameInput').value.trim();
+  const v    = document.getElementById('walletInput').value.trim();
+  if (!nick)                                { toast('Enter your nickname first! 🤔','err'); return null; }
+  if (!v.startsWith('0x') || v.length < 10){ toast('Enter a valid wallet address (0x...)','err'); return null; }
+  myNickname = nick;
+  playerNicknames[v] = nick;
+  return v;
+}
+function goCreate() { const a=getAddress(); if(!a)return; myAddress=a; show('s-create'); }
+function goJoin()   { const a=getAddress(); if(!a)return; myAddress=a; show('s-join'); }
+
+// ═══════════════════════════════════════════════════════
+// CREATE / JOIN
+// ═══════════════════════════════════════════════════════
+function createRoom() {
+  showStatus('⛓️ Creating room on blockchain...');
+  socket.emit('create_room', { playerAddress: myAddress, nickname: myNickname, difficulty: selectedDiff });
+}
+
+function joinRoom() {
+  const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+  if (!code) { toast('Enter a room code','err'); return; }
+  if (!myNickname) {
+    const n = document.getElementById('nicknameInput')?.value?.trim();
+    if (n) { myNickname=n; playerNicknames[myAddress]=n; }
+  }
+  showStatus('⛓️ Joining room on blockchain...');
+  socket.emit('join_room', { roomId:code, playerAddress:myAddress, nickname:myNickname });
+  openLobby(code, null, false, [myAddress]);
+}
+
+// ═══════════════════════════════════════════════════════
+// LOBBY
+// ═══════════════════════════════════════════════════════
+function openLobby(roomId, _unused, host, players) {
+  document.getElementById('lobbyRoomId').textContent = roomId;
+  document.getElementById('hostBtn').style.display   = host ? 'block' : 'none';
+  document.getElementById('waitMsg').style.display   = host ? 'none'  : 'block';
+  document.getElementById('playerCount').textContent = players.length;
+  updateStartBtn(players.length);
+  renderPlayers(players, host ? myAddress : '');
+  show('s-lobby');
+}
+
+function updateStartBtn(n) {
+  const btn = document.getElementById('startBtn');
+  if (!btn) return;
+  btn.disabled = n < 2;
+  btn.textContent = n < 2 ? '🚀 Need '+(2-n)+' more player'+(2-n!==1?'s':'') : '🚀 Start Game!';
+}
+
+function updateLobby(state) {
+  document.getElementById('lobbyRoomId').textContent = state.room_id || myRoomId;
+  const n = state.player_count || (state.players||[]).length;
+  document.getElementById('playerCount').textContent = n;
+  updateStartBtn(n);
+  renderPlayers(state.players || [], state.host || '');
+}
+
+function renderPlayers(players, hostAddr) {
+  const list = document.getElementById('playerList');
+  list.innerHTML = '';
+  players.forEach(addr => {
+    const name = displayName(addr).replace('⭐ ','');
+    const initials = name.slice(0,2).toUpperCase();
+    list.innerHTML += `
+      <div class="player-item">
+        <div class="avatar">${initials}</div>
+        <div class="pname">${name}</div>
+        ${addr===hostAddr ? '<span class="tag tag-host">HOST</span>' : ''}
+        ${addr===myAddress ? '<span class="tag tag-you">YOU</span>' : ''}
+      </div>`;
+  });
+}
+
+function startGame() {
+  showStatus('🚀 Starting game on blockchain...');
+  socket.emit('start_game', { roomId:myRoomId, hostAddress:myAddress });
+}
+
+// ═══════════════════════════════════════════════════════
+// ROUND START
+// ═══════════════════════════════════════════════════════
+function startRound(d) {
+  pickedAnswer  = null;
+  roundStartMs  = Date.now();
+
+  document.getElementById('roundNum').textContent    = d.round;
+  document.getElementById('roundTotal').textContent  = d.total_rounds;
+  document.getElementById('statementText').textContent = d.statement || 'Loading...';
+
+  // difficulty badge
+  const db = document.getElementById('diffBadge');
+  const diff = d.difficulty || 'medium';
+  db.className = 'diff-badge ' + diffClass(diff);
+  db.textContent = diffLabel(diff);
+
+  // spectator: don't show answer panel
+  if (!isSpectator) {
+    document.getElementById('answerPanel').style.display = 'block';
+    document.getElementById('waitPanel').style.display   = 'none';
+    document.getElementById('pickedLabel').style.display = 'none';
+    document.getElementById('submitBtn').disabled        = true;
+    document.getElementById('btnTrue').className         = 'btn btn-true';
+    document.getElementById('btnTwist').className        = 'btn btn-twist';
+    document.getElementById('spectatorBanner').style.display = 'none';
+  } else {
+    document.getElementById('answerPanel').style.display = 'none';
+    document.getElementById('waitPanel').style.display   = 'none';
+    document.getElementById('spectatorBanner').style.display = 'block';
+  }
+
+  refreshStreak();
+  startTimer(d.time_limit || 15);
+  SFX.roundStart();
+  show('s-game');
+}
+
+// ═══════════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════════
+function startTimer(secs) {
+  if (timerHandle) clearInterval(timerHandle);
+  timeLeft = secs;
+  const el = document.getElementById('timerEl');
+  el.textContent = timeLeft;
+  el.className   = 'timer';
+  timerHandle = setInterval(() => {
+    timeLeft--;
+    el.textContent = timeLeft;
+    if (timeLeft <= 5) { el.className='timer urgent'; SFX.countdown(); }
+    if (timeLeft <= 0) { clearInterval(timerHandle); if (pickedAnswer && !isSpectator) submitAnswer(); }
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════════
+// ANSWER
+// ═══════════════════════════════════════════════════════
+function pick(answer) {
+  if (isSpectator) return;
+  pickedAnswer = answer;
+  document.getElementById('btnTrue').className  = answer==='TRUE'  ? 'btn btn-true selected'  : 'btn btn-true dim';
+  document.getElementById('btnTwist').className = answer==='TWIST' ? 'btn btn-twist selected' : 'btn btn-twist dim';
+  const lbl = document.getElementById('pickedLabel');
+  lbl.style.display = 'block';
+  lbl.style.color   = answer==='TRUE' ? 'var(--green)' : 'var(--red)';
+  lbl.textContent   = answer==='TRUE' ? '✅ TRUE selected' : '❌ TWIST selected';
+  document.getElementById('submitBtn').disabled = false;
+  SFX.pick();
+}
+
+function submitAnswer() {
+  if (!pickedAnswer || isSpectator) { if(!isSpectator) toast('Pick TRUE or TWIST first!','err'); return; }
+  if (timerHandle) clearInterval(timerHandle);
+  const elapsed = Math.round((Date.now() - roundStartMs) / 1000);
+  document.getElementById('submitBtn').disabled = true;
+  socket.emit('submit_answer', {
+    roomId: myRoomId, playerAddress: myAddress,
+    answer: pickedAnswer, explanation: '',
+    elapsedSeconds: elapsed,
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SCORING ANIMATION
+// ═══════════════════════════════════════════════════════
+let scoringInt = null;
+function cycleScoringMsg() {
+  const msgs = ['🤖 Calculating scores...','⚖️ Checking answers...','🔍 Tallying results...','✅ Finalising...'];
+  let i = 0;
+  if (scoringInt) clearInterval(scoringInt);
+  scoringInt = setInterval(() => { i=(i+1)%msgs.length; document.getElementById('scoringMsg').textContent=msgs[i]; }, 2000);
+}
+
+// ═══════════════════════════════════════════════════════
+// ROUND RESULTS
+// ═══════════════════════════════════════════════════════
+function showRoundResults(data) {
+  if (scoringInt) clearInterval(scoringInt);
+  const { roundResult, roomState } = data;
+  const correct    = roundResult.correct_answer || '?';
+  const expl       = roundResult.real_explanation || '';
+  const myResult   = roundResult.round_results?.[myAddress];
+  const iGotIt     = myResult?.correct;
+  const diff       = roundResult.difficulty || 'medium';
+
+  // streak
+  if (!isSpectator) {
+    if (iGotIt) { currentStreak++; SFX.correct(); if (currentStreak >= 2) confetti(40); }
+    else        { currentStreak = 0; SFX.wrong(); }
+  }
+
+  // correct reveal
+  const crClass = iGotIt ? 'cr-correct' : (!isSpectator ? 'cr-wrong' : '');
+  document.getElementById('correctReveal').innerHTML = `
+    <div class="correct-reveal ${crClass}">
+      <div class="muted" style="font-size:.62rem;letter-spacing:1px;text-transform:uppercase">Correct Answer</div>
+      <div class="cr-answer" style="color:${correct==='TRUE'?'var(--green)':'var(--red)'}">
+        ${correct==='TRUE' ? '✅ TRUE' : '❌ TWIST'}
+      </div>
+      <div style="display:inline-block;margin:4px 0 8px"><span class="diff-badge ${diffClass(diff)}">${diffLabel(diff)}</span></div>
+      <div class="muted" style="font-size:.82rem;line-height:1.6">${expl}</div>
+    </div>`;
+
+  // per-player results
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '<div class="card-title">Player Results</div>';
+  const results = roundResult.round_results || {};
+  Object.entries(results).forEach(([addr, r], idx) => {
+    const name      = displayName(addr);
+    const speedHtml = r.speed_bonus > 0 ? `<span class="speed-tag">⚡+${r.speed_bonus} speed</span>` : '';
+    list.innerHTML += `
+      <div class="result-card ${r.correct?'correct':'incorrect'}" style="animation-delay:${idx*.06}s">
+        <div class="result-row">
+          <span style="font-weight:700">${name} ${r.correct?'✅':'❌'}</span>
+          <span><span class="xp-pill">+${r.round_xp||0} XP</span>${speedHtml}</span>
+        </div>
+        <div class="muted" style="font-size:.8rem;margin-top:5px">
+          Answered: <strong>${r.answer||'—'}</strong> · ${r.correct?'Correct! 🎯':'Wrong ❌'}
+          ${r.elapsed_seconds != null ? ` · ${r.elapsed_seconds}s` : ''}
+        </div>
+      </div>`;
+  });
+
+  // scores
+  const sl = document.getElementById('scoresList');
+  sl.innerHTML = '';
+  const scores = roomState?.scores || {};
+  Object.entries(scores).sort((a,b)=>b[1]-a[1]).forEach(([addr,xp],i) => {
+    const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+    sl.innerHTML += `
+      <div class="lb-item">
+        <div class="rank ${rc}">${i+1}</div>
+        <div style="flex:1">${displayName(addr)}</div>
+        <div class="lb-xp">${xp} XP</div>
+      </div>`;
+  });
+
+  // countdown
+  let cd = 6;
+  document.getElementById('nextTimer').textContent = cd;
+  const cdi = setInterval(()=>{ cd--; document.getElementById('nextTimer').textContent=cd; if(cd<=0) clearInterval(cdi); },1000);
+
+  show('s-results');
+}
+
+// ═══════════════════════════════════════════════════════
+// GAME OVER
+// ═══════════════════════════════════════════════════════
+function showGameOver(data) {
+  const ranking = data.final_ranking || [];
+  const medals  = ['🥇','🥈','🥉'];
+  const fr = document.getElementById('finalRanking');
+  fr.innerHTML = ranking.length === 0 ? '<div class="center muted">No results</div>' : '';
+  ranking.forEach((entry, i) => {
+    const name = displayName(entry.player);
+    fr.innerHTML += `
+      <div class="lb-item" style="margin-bottom:10px;animation:fadeUp .4s ease ${i*.1}s both">
+        <div style="font-size:1.8rem;width:42px;text-align:center">${medals[i]||('#'+(i+1))}</div>
+        <div style="flex:1;font-family:var(--fh);font-weight:700;font-size:1rem">${name}</div>
+        <div class="lb-xp" style="font-size:1.05rem">${entry.score} XP</div>
+      </div>`;
+  });
+
+  SFX.gameOver();
+  const isWinner = ranking[0]?.player === myAddress;
+  setTimeout(() => confetti(isWinner ? 160 : 60), 350);
+  show('s-gameover');
+}
+
+// ═══════════════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════════════
+async function showLeaderboard() {
+  show('s-leaderboard');
+  document.getElementById('lbList').innerHTML = '<div class="center muted">Loading...</div>';
+  try {
+    const r = await fetch(BACKEND+'/api/leaderboard');
+    const j = await r.json();
+    const list = document.getElementById('lbList');
+    if (!j.data || j.data.length === 0) {
+      list.innerHTML = '<div class="center muted" style="padding:20px">No games yet — be the first! 🎮</div>';
       return;
     }
-
-    usdc = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
-    arcpay = new ethers.Contract(ARCPAY_ADDR, ARCPAY_ABI, signer);
-    document.getElementById("wlabel").textContent = wallet.slice(0,6) + "..." + wallet.slice(-4);
-    document.getElementById("wdot").classList.add("on");
-    document.getElementById("wbtn").textContent = "Connected ✓";
-    document.getElementById("hero-addr").textContent = wallet.slice(0,8) + "..." + wallet.slice(-6);
-
-    await refreshBalance();
-    updateStats();
-    toast("Connected to Arc Testnet ✓", "ok");
-
-  } catch(e) {
-    if (e.message?.includes("same RPC") || e.message?.includes("already exists") || e.code === -32603) {
-      // Network already exists — just get signer and continue
-      try {
-        signer = await provider.getSigner();
-        wallet = await signer.getAddress();
-        const network = await provider.getNetwork();
-        if (Number(network.chainId) !== 5042002) {
-          toast("Please switch to Arc Testnet manually in your wallet", "er");
-          return;
-        }
-        usdc = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
-    arcpay = new ethers.Contract(ARCPAY_ADDR, ARCPAY_ABI, signer);
-        document.getElementById("wlabel").textContent = wallet.slice(0,6) + "..." + wallet.slice(-4);
-        document.getElementById("wdot").classList.add("on");
-        document.getElementById("wbtn").textContent = "Connected ✓";
-        document.getElementById("hero-addr").textContent = wallet.slice(0,8) + "..." + wallet.slice(-6);
-        await refreshBalance();
-        updateStats();
-        toast("Connected ✓", "ok");
-      } catch(e2) { toast("Connect failed: " + e2.message, "er"); }
-    } else {
-      toast("Connect failed: " + e.message, "er");
-    }
-  }
-}
-
-async function refreshBalance() {
-  if (!usdc || !wallet) return;
-  try {
-    const bal = await usdc.balanceOf(wallet);
-    const fmt = (Number(bal) / 1e6).toFixed(2);
-    document.getElementById("hero-bal").textContent = parseFloat(fmt).toLocaleString("en", {minimumFractionDigits: 2});
-    document.getElementById("hero-sub").textContent = `Available on Arc Testnet`;
-  } catch {}
-}
-
-function updateStats() {
-  document.getElementById("stat-paid").textContent = "$" + totalPaid.toFixed(2);
-  document.getElementById("stat-txs").textContent = totalTxs;
-  document.getElementById("stat-recs").textContent = totalRecs;
-}
-
-// ── SINGLE PAYMENT ────────────────────────────────────────────
-function calcSingle() {
-  const amt = parseFloat(document.getElementById("s-amt").value) || 0;
-  const name = document.getElementById("s-name").value.trim() || "Recipient";
-  const addr = document.getElementById("s-addr").value.trim();
-  const summary = document.getElementById("single-summary");
-
-  if (amt > 0 && addr) {
-    summary.style.display = "block";
-    document.getElementById("sum-name").textContent = name;
-    document.getElementById("sum-amt").textContent = amt.toFixed(2) + " USDC";
-    document.getElementById("sum-total").textContent = (amt + 0.006).toFixed(3) + " USDC";
-  } else {
-    summary.style.display = "none";
-  }
-}
-
-async function doSingle() {
-  if (!signer) { toast("Connect wallet first", "er"); return; }
-  const addr = document.getElementById("s-addr").value.trim();
-  const amt = parseFloat(document.getElementById("s-amt").value);
-  const name = document.getElementById("s-name").value.trim() || addr.slice(0,8) + "...";
-  const note = document.getElementById("s-note").value.trim();
-
-  if (!addr || !addr.startsWith("0x")) { toast("Enter valid wallet address", "er"); return; }
-  if (!amt || amt <= 0) { toast("Enter valid amount", "er"); return; }
-
-  const amount = BigInt(Math.round(amt * 1e6));
-  const st = document.getElementById("single-st");
-  const btn = document.getElementById("single-btn");
-
-  try {
-    btn.disabled = true;
-    st.className = "status p";
-    st.innerHTML = '<span class="spin"></span>Sending ' + amt.toFixed(2) + ' USDC to ' + name + '...';
-
-    const tx = await usdc.transfer(addr, amount);
-    st.innerHTML = `<span class="spin"></span>Confirming... <a class="tx-hash" href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">${tx.hash.slice(0,16)}...</a>`;
-
-    const rc = await tx.wait();
-    st.className = "status ok";
-    st.innerHTML = `✓ Sent ${amt.toFixed(2)} USDC to ${name}! <a class="tx-hash" href="https://testnet.arcscan.app/tx/${rc.hash}" target="_blank">View on Explorer →</a>`;
-
-    // Save to history
-    saveHistory({ type: "single", name, addr, amount: amt, note, hash: rc.hash, ts: Date.now(), status: "ok" });
-    totalPaid += amt; totalTxs++; totalRecs++;
-    saveStats();
-    updateStats();
-    await refreshBalance();
-    toast("Payment sent ✓", "ok");
-
-    document.getElementById("s-addr").value = "";
-    document.getElementById("s-amt").value = "";
-    document.getElementById("s-name").value = "";
-    document.getElementById("s-note").value = "";
-    document.getElementById("single-summary").style.display = "none";
-  } catch(e) {
-    st.className = "status er";
-    st.textContent = "✗ " + (e.reason || e.message || "Transaction failed");
-    toast("Payment failed", "er");
-  } finally { btn.disabled = false; }
-}
-
-// ── BULK PAYROLL ──────────────────────────────────────────────
-function addManual() {
-  const name = document.getElementById("b-name").value.trim();
-  const addr = document.getElementById("b-addr").value.trim();
-  const amt = parseFloat(document.getElementById("b-amt").value);
-
-  if (!addr || !addr.startsWith("0x")) { toast("Enter valid wallet address", "er"); return; }
-  if (!amt || amt <= 0) { toast("Enter valid amount", "er"); return; }
-
-  bulkList.push({ name: name || addr.slice(0,8) + "...", addr, amount: amt });
-  document.getElementById("b-name").value = "";
-  document.getElementById("b-addr").value = "";
-  document.getElementById("b-amt").value = "";
-  renderBulk();
-  toast("Recipient added ✓", "ok");
-}
-
-function handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const lines = e.target.result.split("\n").filter(l => l.trim());
-    let added = 0;
-    lines.forEach(line => {
-      const parts = line.split(",").map(p => p.trim());
-      if (parts.length >= 3) {
-        const [name, addr, amtStr] = parts;
-        const amt = parseFloat(amtStr);
-        if (addr && addr.startsWith("0x") && amt > 0) {
-          bulkList.push({ name: name || addr.slice(0,8) + "...", addr, amount: amt });
-          added++;
-        }
-      } else if (parts.length === 2) {
-        const [addr, amtStr] = parts;
-        const amt = parseFloat(amtStr);
-        if (addr && addr.startsWith("0x") && amt > 0) {
-          bulkList.push({ name: addr.slice(0,8) + "...", addr, amount: amt });
-          added++;
-        }
-      }
+    const medals = ['🥇','🥈','🥉'];
+    list.innerHTML = '';
+    j.data.forEach((e,i) => {
+      const isMe = e.player === myAddress;
+      const name = (e.nickname?.length > 0) ? e.nickname : (isMe ? (myNickname||'You') : e.player.slice(0,6)+'...'+e.player.slice(-4));
+      const rc   = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+      list.innerHTML += `
+        <div class="lb-item">
+          <div class="rank ${rc}">${medals[i]||(i+1)}</div>
+          <div style="flex:1">
+            <div style="font-weight:700">${name}${isMe?' ⭐':''}</div>
+            <div class="muted" style="font-size:.72rem">${e.gamesPlayed} game${e.gamesPlayed!==1?'s':''} · ${e.wins} win${e.wins!==1?'s':''}</div>
+          </div>
+          <div class="lb-xp">${e.totalXp} XP</div>
+        </div>`;
     });
-    renderBulk();
-    toast(added + " recipients loaded from CSV ✓", "ok");
-  };
-  reader.readAsText(file);
-}
-
-function dragOver(e) { e.preventDefault(); document.getElementById("dropzone").classList.add("drag"); }
-function dragLeave() { document.getElementById("dropzone").classList.remove("drag"); }
-function dropFile(e) {
-  e.preventDefault();
-  document.getElementById("dropzone").classList.remove("drag");
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
-}
-
-function removeBulkItem(i) {
-  bulkList.splice(i, 1);
-  renderBulk();
-}
-
-function clearBulk() { bulkList = []; renderBulk(); }
-
-function renderBulk() {
-  const list = document.getElementById("bulk-list");
-  const card = document.getElementById("bulk-table-card");
-  const total = bulkList.reduce((s, r) => s + r.amount, 0);
-  const gas = bulkList.length * 0.006;
-
-  if (!bulkList.length) { card.style.display = "none"; return; }
-  card.style.display = "block";
-
-  list.innerHTML = bulkList.map((r, i) => `
-    <div class="pt-row">
-      <div>
-        <div class="pt-name">${r.name}</div>
-        <div class="pt-addr">${r.addr.slice(0,10)}...${r.addr.slice(-6)}</div>
-      </div>
-      <div><div class="pt-addr">${r.addr.slice(0,14)}...${r.addr.slice(-4)}</div></div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="pt-amount">${r.amount.toFixed(2)} USDC</div>
-        <button class="pt-remove" onclick="removeBulkItem(${i})">×</button>
-      </div>
-    </div>`).join("");
-
-  document.getElementById("bulk-count").textContent = bulkList.length + " recipients";
-  document.getElementById("bulk-count-btn").textContent = "Pay " + bulkList.length + " people →";
-  document.getElementById("bsum-recs").textContent = bulkList.length;
-  document.getElementById("bsum-amt").textContent = total.toFixed(2) + " USDC";
-  document.getElementById("bsum-gas").textContent = "~" + gas.toFixed(3) + " USDC";
-  document.getElementById("bsum-total").textContent = (total + gas).toFixed(3) + " USDC";
-}
-
-async function doBulk() {
-  if (!signer) { toast("Connect wallet first", "er"); return; }
-  if (!bulkList.length) { toast("Add recipients first", "er"); return; }
-
-  const st = document.getElementById("bulk-st");
-  const btn = document.getElementById("bulk-btn");
-  const batchTotal = bulkList.reduce((s, r) => s + r.amount, 0);
-  const totalAmount = BigInt(Math.round(batchTotal * 1e6));
-  const recipients = bulkList.map(r => r.addr);
-  const amounts = bulkList.map(r => BigInt(Math.round(r.amount * 1e6)));
-
-  btn.disabled = true;
-  try {
-    // STEP 1: One approval for the total amount
-    st.className = "status p";
-    st.innerHTML = `<span class="spin"></span>Step 1/2 — Approving ${batchTotal.toFixed(2)} USDC for all ${bulkList.length} recipients...`;
-    const approveTx = await usdc.approve(ARCPAY_ADDR, totalAmount);
-    await approveTx.wait();
-
-    // STEP 2: One transaction pays everyone
-    st.innerHTML = `<span class="spin"></span>Step 2/2 — Sending to all ${bulkList.length} recipients in one transaction...`;
-    const tx = await arcpay.batchPay(recipients, amounts);
-    st.innerHTML = `<span class="spin"></span>Confirming... <a class="tx-hash" href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">${tx.hash.slice(0,16)}...</a>`;
-    const rc = await tx.wait();
-
-    st.className = "status ok";
-    st.innerHTML = `✓ Payroll complete! All ${bulkList.length} recipients paid in ONE transaction. <a class="tx-hash" href="https://testnet.arcscan.app/tx/${rc.hash}" target="_blank">View on Explorer →</a>`;
-
-    saveHistory({ type: "bulk", count: bulkList.length, amount: batchTotal, hash: rc.hash, ts: Date.now(), status: "ok" });
-    totalPaid += batchTotal; totalTxs += 1; totalRecs += bulkList.length;
-    saveStats();
-    updateStats();
-    await refreshBalance();
-    toast("Payroll complete ✓ — 1 transaction!", "ok");
-    bulkList = [];
-    renderBulk();
   } catch(e) {
-    st.className = "status er";
-    st.textContent = "✗ " + (e.reason || e.message || "Transaction failed");
-    toast("Payroll failed", "er");
+    document.getElementById('lbList').innerHTML = '<div class="center muted">Could not load leaderboard</div>';
   }
-  btn.disabled = false;
 }
 
-// ── HISTORY ───────────────────────────────────────────────────
-function saveHistory(entry) {
-  history.unshift(entry);
-  if (history.length > 50) history = history.slice(0, 50);
-  localStorage.setItem("arcpay_history", JSON.stringify(history));
-}
-
-function saveStats() {
-  localStorage.setItem("arcpay_total", totalPaid.toString());
-  localStorage.setItem("arcpay_txs", totalTxs.toString());
-  localStorage.setItem("arcpay_recs", totalRecs.toString());
-}
-
-function renderHistory() {
-  const list = document.getElementById("hist-list");
-  document.getElementById("hist-count").textContent = history.length + " payments";
-
-  if (!history.length) {
-    list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">No payments yet</div><div class="empty-sub">Your payment history will appear here after you send payments</div></div>`;
-    return;
-  }
-
-  list.innerHTML = history.map(h => {
-    const date = new Date(h.ts).toLocaleDateString("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-    const isBulk = h.type === "bulk";
-    const pill = h.status === "ok" ? "pill-ok" : h.status === "partial" ? "pill-pending" : "pill-fail";
-    const pillText = h.status === "ok" ? "Confirmed" : h.status === "partial" ? "Partial" : "Failed";
-    const hash = h.hash || (h.hashes?.[0]?.hash);
-    return `
-    <div class="tx-row">
-      <div class="tx-ico ${isBulk ? "ico-bulk" : "ico-single"}">${isBulk ? "👥" : "→"}</div>
-      <div>
-        <div class="tx-name">${isBulk ? "Payroll · " + h.count + " recipients" : "Payment to " + (h.name || h.addr?.slice(0,10) + "...")}</div>
-        <div class="tx-meta">${h.note || (isBulk ? "Bulk transfer" : "Direct payment")} · ${date}</div>
-        ${hash ? `<a class="tx-hash" href="https://testnet.arcscan.app/tx/${hash}" target="_blank">${hash.slice(0,16)}...</a>` : ""}
-      </div>
-      <div class="tx-right">
-        <div class="tx-amt">-${h.amount.toFixed(2)} USDC</div>
-        <span class="tx-status-pill ${pill}">${pillText}</span>
-      </div>
-    </div>`;
-  }).join("");
-}
-
-// ── BLOCK POLLING ─────────────────────────────────────────────
-async function pollBlock() {
-  try {
-    const p = new ethers.JsonRpcProvider(RPC);
-    const b = await p.getBlockNumber();
-    document.getElementById("blknum").textContent = "Block #" + b.toLocaleString();
-  } catch { document.getElementById("blknum").textContent = "offline"; }
-}
-
-function toast(msg, type = "ok") {
-  const t = document.getElementById("toast");
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function playAgain() { myRoomId=''; pickedAnswer=null; amHost=false; isSpectator=false; currentStreak=0; show('s-home'); }
+function cap(s)      { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+function toast(msg, type='info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast'+(type==='err'?' err':type==='ok'?' ok':'');
   t.textContent = msg;
-  t.className = "toast " + type + " show";
-  setTimeout(() => t.classList.remove("show"), 3000);
+  c.appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .3s,transform .3s'; t.style.opacity='0'; t.style.transform='translateX(110%)'; setTimeout(()=>t.remove(),300); },3000);
 }
-
-// ── INIT ──────────────────────────────────────────────────────
-window.addEventListener("load", () => {
-  updateStats();
-  pollBlock();
-  setInterval(pollBlock, 12000);
-
-  // Recalculate fee on address input too
-  document.getElementById("s-addr").addEventListener("input", calcSingle);
-});
 </script>
 </body>
 </html>
